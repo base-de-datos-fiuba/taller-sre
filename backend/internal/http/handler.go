@@ -30,7 +30,7 @@ func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
 	if search == "" {
 		items, err = h.products.List(r.Context())
 	} else {
-		items, err = h.products.SearchVulnerable(r.Context(), search)
+		items, err = h.products.Search(r.Context(), search)
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)

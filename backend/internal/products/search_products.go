@@ -1,21 +1,16 @@
 package products
 
-import (
-	"context"
+import "context"
 
-	"github.com/jackc/pgx/v5"
-)
-
-// SearchVulnerable is INTENTIONALLY VULNERABLE.
-// This code exists only for the university SQL injection demonstration.
-// Never write production code like this.
-func (r *Repository) SearchVulnerable(ctx context.Context, search string) ([]Product, error) {
-	// Deliberate SQL injection: untrusted input is concatenated into SQL.
+// Search treats the external value as data by sending it separately from the
+// SQL statement. PostgreSQL never parses the search text as SQL instructions.
+func (r *Repository) Search(ctx context.Context, search string) ([]Product, error) {
 	query := `SELECT product_id, name, COALESCE(description, ''), price::text, stock
-		FROM product WHERE name ILIKE '%` + search + `%' ORDER BY name`
+		FROM product
+		WHERE name ILIKE $1
+		ORDER BY name`
 
-	// Simple protocol is deliberate: it permits stacked statements for the lesson.
-	rows, err := r.db.Query(ctx, query, pgx.QueryExecModeSimpleProtocol)
+	rows, err := r.db.Query(ctx, query, "%"+search+"%")
 	if err != nil {
 		return nil, err
 	}
