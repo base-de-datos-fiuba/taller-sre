@@ -1,6 +1,14 @@
--- bytemarket_admin is created by the official PostgreSQL image from
--- POSTGRES_USER. It is intentionally a superuser for the first lesson.
--- A later lesson can create a restricted login role in this file and grant
--- only SELECT on the application tables.
-COMMENT ON ROLE bytemarket_admin IS
-    'INTENTIONALLY OVERPRIVILEGED role for the disposable classroom demo';
+-- The bootstrap administrator owns the schema and runs migrations, but the
+-- application connects with a separate role that cannot create or drop it.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'bytemarket_app') THEN
+        CREATE ROLE bytemarket_app
+            LOGIN
+            PASSWORD 'classroom_demo_only';
+    END IF;
+END
+$$;
+
+COMMENT ON ROLE bytemarket_app IS
+    'Restricted login used by the ByteMarket backend';

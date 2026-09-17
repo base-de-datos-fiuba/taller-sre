@@ -12,7 +12,7 @@ import (
 func Connect(ctx context.Context) (*pgxpool.Pool, error) {
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
-		getenv("DB_USER", "bytemarket_admin"),
+		getenv("DB_USER", "bytemarket_app"),
 		getenv("DB_PASSWORD", "classroom_demo_only"),
 		getenv("DB_HOST", "localhost"),
 		getenv("DB_PORT", "5432"),

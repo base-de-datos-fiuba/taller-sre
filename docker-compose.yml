@@ -27,7 +27,7 @@ services:
       DB_HOST: db
       DB_PORT: "5432"
       DB_NAME: bytemarket
-      DB_USER: bytemarket_admin
+      DB_USER: bytemarket_app
       DB_PASSWORD: classroom_demo_only
       PORT: "8080"
     ports:
