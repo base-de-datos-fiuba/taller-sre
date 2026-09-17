@@ -1,31 +1,32 @@
-# ByteMarket · Hito 1: aplicación vulnerable
+# ByteMarket · Hito 2: backup y restore
 
 > Aplicación educativa e intencionalmente vulnerable. Usar sólo en el entorno local descartable.
 
-Este hito presenta la aplicación inicial: React → Go → PostgreSQL. El esquema base está en
-[`migrations/001_create_initial_schema.sql`](migrations/001_create_initial_schema.sql) y contiene
-clientes, productos, pedidos y sus ítems.
+Sobre la aplicación vulnerable del hito anterior, esta branch incorpora un flujo reproducible de
+respaldo y recuperación.
 
-La búsqueda concatena directamente la entrada externa en
-[`backend/internal/products/search_products_vulnerable.go`](backend/internal/products/search_products_vulnerable.go):
+[`scripts/backup.sh`](scripts/backup.sh) genera un dump binario fuera del contenedor:
 
-```go
-query := `SELECT ... FROM product WHERE name ILIKE '%` + search + `%'`
+```sh
+docker compose exec -T db \
+  pg_dump -U bytemarket_admin -d bytemarket -Fc > "$backup_file"
 ```
 
-Además, el backend usa `bytemarket_admin`, un usuario con privilegios excesivos. La combinación
-permite mostrar por qué una SQL Injection puede tener un impacto tan grande.
+[`scripts/restore.sh`](scripts/restore.sh) recrea el schema cuando fue eliminado y restaura el dump
+con `pg_restore`. Los archivos generados quedan excluidos por
+[`backups/.gitignore`](backups/.gitignore).
 
 ## Probarlo
 
 ```bash
-docker compose up --build
+docker compose up --build -d
+./scripts/backup.sh
 ```
 
-Abrir <http://localhost:5173> y buscar `keyboard`, `mouse` o `monitor`.
+Después de la demostración destructiva:
 
-Archivos clave:
+```bash
+./scripts/restore.sh
+```
 
-- [`docker-compose.yml`](docker-compose.yml): servicios y credenciales iniciales.
-- [`backend/internal/http/handler.go`](backend/internal/http/handler.go): endpoint de productos.
-- [`database/seed.sql`](database/seed.sql): datos para la demostración.
+El objetivo no es solamente crear un archivo: es comprobar que el sistema puede recuperarse.
