@@ -1,25 +1,26 @@
-# ByteMarket · Hito 3: consulta parametrizada
+# ByteMarket · Hito 4: mínimo privilegio
 
-Este hito corrige la SQL Injection de la búsqueda. En
-[`backend/internal/products/search_products.go`](backend/internal/products/search_products.go), el
-SQL y la entrada externa ahora viajan separados:
+Este hito agrega una segunda defensa: el backend deja de conectarse como administrador.
 
-```go
-query := `SELECT ... FROM product WHERE name ILIKE $1`
-rows, err := r.db.Query(ctx, query, "%"+search+"%")
+[`database/init/001_roles.sql`](database/init/001_roles.sql) crea el usuario de aplicación:
+
+```sql
+CREATE ROLE bytemarket_app
+LOGIN PASSWORD 'classroom_demo_only';
 ```
 
-También se reemplaza `SearchVulnerable` por `Search` en
-[`backend/internal/http/handler.go`](backend/internal/http/handler.go). Ya no se usa el protocolo
-simple que permitía ejecutar sentencias apiladas.
+[`migrations/002_grant_application_permissions.sql`](migrations/003_grant_application_permissions.sql)
+otorga sólo acceso al schema y operaciones normales sobre tablas y secuencias. Luego
+[`docker-compose.yml`](docker-compose.yml) configura:
 
-## Verificar la mejora
-
-```bash
-docker compose up --build
+```yaml
+DB_USER: bytemarket_app
 ```
 
-Las búsquedas normales siguen funcionando. Una entrada que contiene SQL ahora se trata como texto
-y no modifica el esquema.
+## Qué mejora
 
-Todavía queda una defensa pendiente: el backend continúa conectado con un usuario administrador.
+- La consulta sigue parametrizada.
+- La aplicación puede consultar y modificar sus datos.
+- El usuario del backend no puede crear ni eliminar el schema.
+
+Estas defensas se complementan: limitar permisos no reemplaza las consultas parametrizadas.
