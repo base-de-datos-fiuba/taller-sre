@@ -1,26 +1,25 @@
-# ByteMarket · Hito 4: mínimo privilegio
+# ByteMarket · Hito 5: auditoría de precios
 
-Este hito agrega una segunda defensa: el backend deja de conectarse como administrador.
-
-[`database/init/001_roles.sql`](database/init/001_roles.sql) crea el usuario de aplicación:
+La migración [`migrations/003_add_product_price_audit.sql`](migrations/003_add_product_price_audit.sql)
+crea la tabla de auditoría, la función y el trigger para registrar cambios de precio.
 
 ```sql
-CREATE ROLE bytemarket_app
-LOGIN PASSWORD 'classroom_demo_only';
+CREATE TRIGGER trg_product_price_audit
+AFTER UPDATE OF price ON product
+FOR EACH ROW
+WHEN (OLD.price IS DISTINCT FROM NEW.price)
+EXECUTE FUNCTION log_product_price_change();
 ```
 
-[`migrations/002_grant_application_permissions.sql`](migrations/003_grant_application_permissions.sql)
-otorga sólo acceso al schema y operaciones normales sobre tablas y secuencias. Luego
-[`docker-compose.yml`](docker-compose.yml) configura:
+Cada cambio guarda `old_price`, `new_price`, `changed_at` y `CURRENT_USER`. El trigger registra una
+fila por cada producto afectado, incluso si un único `UPDATE` modifica muchos productos.
 
-```yaml
-DB_USER: bytemarket_app
+## Probarlo
+
+```sql
+UPDATE product SET price = 1500 WHERE product_id = 3;
+SELECT * FROM product_price_audit;
 ```
 
-## Qué mejora
-
-- La consulta sigue parametrizada.
-- La aplicación puede consultar y modificar sus datos.
-- El usuario del backend no puede crear ni eliminar el schema.
-
-Estas defensas se complementan: limitar permisos no reemplaza las consultas parametrizadas.
+La búsqueda ya está parametrizada y el backend usa `bytemarket_app`. El rol tiene permisos de
+escritura sobre las tablas para las operaciones normales de la aplicación.
