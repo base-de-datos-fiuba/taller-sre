@@ -53,16 +53,16 @@ func (h *Handler) changePrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	change, err := h.products.ChangePrice(r.Context(), id, input.Price)
-	if products.IsProductNotFound(err) {
-		writeError(w, http.StatusNotFound, errors.New("product not found"))
-		return
-	}
+	updated, err := h.products.ChangePrice(r.Context(), id, input.Price)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, change)
+	if !updated {
+		writeError(w, http.StatusNotFound, errors.New("product not found"))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {

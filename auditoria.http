@@ -5,9 +5,8 @@
 ### Ver productos y sus precios actuales
 GET {{baseUrl}}/api/products
 
-### Cambiar el precio; la respuesta incluye la fila creada por el trigger
-# Cambiar newPrice arriba antes de repetir la prueba. Si el precio es igual,
-# la respuesta contiene "audit": null.
+### Cambiar el precio; después consultar product_price_audit desde el IDE
+# Cambiar newPrice arriba antes de repetir la prueba.
 PATCH {{baseUrl}}/api/products/{{productId}}/price
 Content-Type: application/json
 

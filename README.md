@@ -25,13 +25,14 @@ curl -X PATCH http://localhost:8080/api/products/3/price \
   -d '{"price":"1500.00"}'
 ```
 
-La respuesta incluye `product_id`, el precio final y `audit` con `old_price`, `new_price`,
-`changed_at` y `changed_by`. Repetir el mismo precio devuelve `audit: null`, porque el trigger
-no registra un cambio inexistente. También se puede consultar el historial directamente:
+El endpoint responde `204 No Content`. Desde el IDE de SQL, consultar los registros creados por
+el trigger:
 
 ```sql
 SELECT * FROM product_price_audit WHERE product_id = 3 ORDER BY audit_id;
 ```
+
+Repetir el mismo precio no crea una nueva fila de auditoría.
 
 La búsqueda ya está parametrizada y el backend usa `bytemarket_app`. El rol tiene permisos de
 escritura sobre las tablas para las operaciones normales de la aplicación.
