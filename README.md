@@ -16,9 +16,18 @@ fila por cada producto afectado, incluso si un único `UPDATE` modifica muchos p
 
 ## Probarlo
 
+```bash
+curl -X PATCH http://localhost:8080/api/products/3/price \
+  -H 'Content-Type: application/json' \
+  -d '{"price":"1500.00"}'
+```
+
+La respuesta incluye `product_id`, el precio final y `audit` con `old_price`, `new_price`,
+`changed_at` y `changed_by`. Repetir el mismo precio devuelve `audit: null`, porque el trigger
+no registra un cambio inexistente. También se puede consultar el historial directamente:
+
 ```sql
-UPDATE product SET price = 1500 WHERE product_id = 3;
-SELECT * FROM product_price_audit;
+SELECT * FROM product_price_audit WHERE product_id = 3 ORDER BY audit_id;
 ```
 
 La búsqueda ya está parametrizada y el backend usa `bytemarket_app`. El rol tiene permisos de

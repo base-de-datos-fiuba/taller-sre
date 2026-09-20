@@ -2,7 +2,11 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"bytemarket/backend/internal/products"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,8 +21,48 @@ func NewHandler(db *pgxpool.Pool) http.Handler {
 	h := &Handler{db: db, products: products.NewRepository(db)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/products", h.listProducts)
+	mux.HandleFunc("PATCH /api/products/{id}/price", h.changePrice)
 	mux.HandleFunc("GET /api/health", h.health)
 	return withCORS(mux)
+}
+
+var validPrice = regexp.MustCompile(`^(0|[1-9][0-9]{0,9})(\.[0-9]{1,2})?$`)
+
+func (h *Handler) changePrice(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, errors.New("invalid product id"))
+		return
+	}
+
+	var input struct {
+		Price string `json:"price"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, errors.New("expected JSON with a price string"))
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		writeError(w, http.StatusBadRequest, errors.New("expected one JSON object"))
+		return
+	}
+	if !validPrice.MatchString(input.Price) {
+		writeError(w, http.StatusBadRequest, errors.New("price must be a nonnegative decimal string with up to two fractional digits"))
+		return
+	}
+
+	change, err := h.products.ChangePrice(r.Context(), id, input.Price)
+	if products.IsProductNotFound(err) {
+		writeError(w, http.StatusNotFound, errors.New("product not found"))
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, change)
 }
 
 func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
