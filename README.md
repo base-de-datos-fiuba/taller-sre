@@ -1,32 +1,25 @@
-# ByteMarket · Hito 2: backup y restore
+# ByteMarket · Hito 3: consulta parametrizada
 
-> Aplicación educativa e intencionalmente vulnerable. Usar sólo en el entorno local descartable.
+Este hito corrige la SQL Injection de la búsqueda. En
+[`backend/internal/products/search_products.go`](backend/internal/products/search_products.go), el
+SQL y la entrada externa ahora viajan separados:
 
-Sobre la aplicación vulnerable del hito anterior, esta branch incorpora un flujo reproducible de
-respaldo y recuperación.
-
-[`scripts/backup.sh`](scripts/backup.sh) genera un dump binario fuera del contenedor:
-
-```sh
-docker compose exec -T db \
-  pg_dump -U bytemarket_admin -d bytemarket -Fc > "$backup_file"
+```go
+query := `SELECT ... FROM product WHERE name ILIKE $1`
+rows, err := r.db.Query(ctx, query, "%"+search+"%")
 ```
 
-[`scripts/restore.sh`](scripts/restore.sh) recrea el schema cuando fue eliminado y restaura el dump
-con `pg_restore`. Los archivos generados quedan excluidos por
-[`backups/.gitignore`](backups/.gitignore).
+También se reemplaza `SearchVulnerable` por `Search` en
+[`backend/internal/http/handler.go`](backend/internal/http/handler.go). Ya no se usa el protocolo
+simple que permitía ejecutar sentencias apiladas.
 
-## Probarlo
+## Verificar la mejora
 
 ```bash
-docker compose up --build -d
-./scripts/backup.sh
+docker compose up --build
 ```
 
-Después de la demostración destructiva:
+Las búsquedas normales siguen funcionando. Una entrada que contiene SQL ahora se trata como texto
+y no modifica el esquema.
 
-```bash
-./scripts/restore.sh
-```
-
-El objetivo no es solamente crear un archivo: es comprobar que el sistema puede recuperarse.
+Todavía queda una defensa pendiente: el backend continúa conectado con un usuario administrador.
