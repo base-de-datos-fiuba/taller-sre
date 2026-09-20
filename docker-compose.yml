@@ -2,6 +2,8 @@ services:
   db:
     image: postgres:18.4
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: bytemarket
       POSTGRES_USER: bytemarket_admin
