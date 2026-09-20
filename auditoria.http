@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:8080
+@productId = 3
+@newPrice = 1501.00
+
+### Ver productos y sus precios actuales
+GET {{baseUrl}}/api/products
+
+### Cambiar el precio; la respuesta incluye la fila creada por el trigger
+# Cambiar newPrice arriba antes de repetir la prueba. Si el precio es igual,
+# la respuesta contiene "audit": null.
+PATCH {{baseUrl}}/api/products/{{productId}}/price
+Content-Type: application/json
+
+{"price":"{{newPrice}}"}

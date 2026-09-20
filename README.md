@@ -16,6 +16,9 @@ fila por cada producto afectado, incluso si un único `UPDATE` modifica muchos p
 
 ## Probarlo
 
+Abrir [`auditoria.http`](auditoria.http) con REST Client y ejecutar los pedidos en orden.
+Cambiar `@newPrice` para generar otra entrada de auditoría.
+
 ```bash
 curl -X PATCH http://localhost:8080/api/products/3/price \
   -H 'Content-Type: application/json' \
